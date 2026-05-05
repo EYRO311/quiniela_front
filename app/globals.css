@@ -1,8 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #060E1E;
+  --foreground: #F8FAFC;
+
+  /* Países sede FIFA 2026 */
+  --mx-green:   #006847;   /* México */
+  --mx-green-l: #16A34A;
+  --us-blue:    #002868;   /* USA */
+  --us-blue-l:  #1D4ED8;
+  --ca-red:     #C8102E;   /* Canadá */
+  --ca-red-l:   #DC2626;
+
+  --dark:  #060E1E;
+  --navy:  #0D1B2A;
+  --card:  #152238;
 }
 
 @theme inline {
@@ -12,15 +24,21 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0D1B2A; }
+::-webkit-scrollbar-thumb { background: #006847; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #16A34A; }
+
+* {
+  transition-property: color, background-color, border-color, opacity, transform;
+  transition-timing-function: ease;
+  transition-duration: 150ms;
 }
