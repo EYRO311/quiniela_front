@@ -10,10 +10,10 @@ import {
 
 /* ── Types ── */
 
-interface EscuderiaRef { id_escuderia: number; nombre: string; color: string | null; pais: string | null }
+interface EscuderiaRef { id_escuderia: number; nombre: string; color: string | null; pais: string | null; logo: string | null }
 interface PilotoEscuderiaRef { rol: string; temporada: number; activo: number; f1_escuderias: EscuderiaRef | null }
 interface F1Piloto { id_piloto: number; nombre: string; numero: number | null; pais: string | null; activo: number; f1_piloto_escuderia: PilotoEscuderiaRef[] }
-interface F1Escuderia { id_escuderia: number; nombre: string; pais: string | null; color: string | null; activo: number }
+interface F1Escuderia { id_escuderia: number; nombre: string; pais: string | null; color: string | null; activo: number; logo: string | null }
 
 interface StandingPiloto {
   posicion: number; puntos: number; victorias: number
@@ -367,15 +367,19 @@ function PilotosTab ({ pilotos }: { pilotos: F1Piloto[] }) {
             style={{ background: '#1e1e2e', border: '1px solid rgba(232,0,45,0.1)' }}>
             <div className="h-1.5 w-full" style={{ background: tc }} />
             <div className="p-4 space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg font-black"
-                  style={{ background: `${tc}22`, color: tc, border: `1px solid ${tc}44` }}>
-                  {p.numero ?? '–'}
+              <div className="flex items-center gap-3">
+                {/* Escudo del equipo */}
+                <div className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden"
+                  style={{ background: `${tc}18`, border: `1px solid ${tc}44` }}>
+                  {equipo?.logo
+                    ? <img src={equipo.logo} alt={equipo.nombre} className="w-9 h-9 object-contain" />
+                    : <span className="text-lg font-black" style={{ color: tc }}>{p.numero ?? '–'}</span>}
                 </div>
-                <div className="min-w-0">
+                <div className="flex-1 min-w-0">
                   <p className="font-bold text-white leading-tight truncate">{p.nombre}</p>
                   <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{p.pais ?? '—'}</p>
                 </div>
+                <span className="text-base font-black shrink-0" style={{ color: tc }}>#{p.numero ?? '–'}</span>
               </div>
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 min-w-0">
@@ -414,11 +418,16 @@ function EscuderiasTab ({ escuderias, pilotos }: { escuderias: F1Escuderia[]; pi
             <div className="h-2 w-full" style={{ background: tc }} />
             <div className="p-5 space-y-4">
               <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-black text-white leading-tight">{e.nombre}</h3>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-black text-white leading-tight truncate">{e.nombre}</h3>
                   <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>{e.pais ?? '—'}</p>
                 </div>
-                <div className="w-10 h-10 rounded-xl shrink-0" style={{ background: `${tc}22`, border: `2px solid ${tc}66` }} />
+                <div className="w-14 h-14 rounded-xl shrink-0 flex items-center justify-center overflow-hidden"
+                  style={{ background: `${tc}18`, border: `2px solid ${tc}44` }}>
+                  {e.logo
+                    ? <img src={e.logo} alt={e.nombre} className="w-10 h-10 object-contain" />
+                    : <div className="w-full h-full" style={{ background: `${tc}44` }} />}
+                </div>
               </div>
               {titulares.length > 0 && (
                 <div className="space-y-2">

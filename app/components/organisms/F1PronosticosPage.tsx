@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import AppSidebar from '@/app/components/layout/appSidebar'
 import { getF1Pilotos, getF1Carreras } from '@/services/f1.service'
 import { getUsuarioInfo } from '@/services/usuario.service'
@@ -13,7 +13,7 @@ interface Piloto {
   nombre: string
   numero: number | null
   pais: string | null
-  f1_piloto_escuderia: { rol: string; f1_escuderias: { nombre: string; color: string | null } | null }[]
+  f1_piloto_escuderia: { rol: string; f1_escuderias: { nombre: string; color: string | null; logo: string | null } | null }[]
 }
 
 interface Carrera {
@@ -57,41 +57,101 @@ function fmtFecha (iso: string) {
   return new Date(iso).toLocaleDateString('es-MX', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-/* ── Selector de piloto ── */
+/* ── Selector de piloto con logo ── */
 function PilotSelect ({
   label, value, onChange, pilotos, accentColor, disabled
 }: {
   label: string; value: string; onChange: (v: string) => void
   pilotos: Piloto[]; accentColor: string; disabled?: boolean
 }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const selected = pilotos.find(p => String(p.id_piloto) === value)
+  const selEq = selected?.f1_piloto_escuderia?.[0]?.f1_escuderias
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
   return (
-    <div>
+    <div ref={ref} className="relative">
       <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: accentColor }}>
         {label}
       </p>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
+      <button
+        type="button"
         disabled={disabled}
-        className="w-full text-sm font-semibold rounded-xl px-3 py-2 focus:outline-none transition-all"
+        onClick={() => !disabled && setOpen(o => !o)}
+        className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-left transition-all"
         style={{
-          background: '#060E1E',
-          color: value ? 'white' : '#4B5563',
-          border: `1px solid ${value ? accentColor + '66' : 'rgba(255,255,255,0.08)'}`,
-          appearance: 'none',
-          opacity: disabled ? 0.5 : 1
+          background: '#15151E',
+          border: `1px solid ${value ? accentColor + '66' : 'rgba(255,255,255,0.1)'}`,
+          opacity: disabled ? 0.5 : 1,
+          cursor: disabled ? 'not-allowed' : 'pointer'
         }}
       >
-        <option value="" style={{ background: '#0D1B2A' }}>— Sin selección —</option>
-        {pilotos.map(p => {
-          const eq = p.f1_piloto_escuderia?.[0]?.f1_escuderias
-          return (
-            <option key={p.id_piloto} value={p.id_piloto} style={{ background: '#0D1B2A' }}>
-              #{p.numero ?? '—'} {p.nombre}{eq ? ` · ${eq.nombre}` : ''}
-            </option>
-          )
-        })}
-      </select>
+        {selected ? (
+          <>
+            {selEq?.logo
+              ? <img src={selEq.logo} alt={selEq.nombre} className="w-6 h-6 object-contain shrink-0" />
+              : <div className="w-6 h-6 rounded-full shrink-0" style={{ background: selEq?.color ?? '#4B5563' }} />
+            }
+            <span className="text-xs font-bold text-white truncate">
+              #{selected.numero ?? '–'} {selected.nombre}
+            </span>
+            <span className="ml-auto text-[10px] shrink-0" style={{ color: '#6B7280' }}>{selEq?.nombre ?? ''}</span>
+          </>
+        ) : (
+          <span className="text-xs" style={{ color: '#4B5563' }}>— Sin selección —</span>
+        )}
+        <span className="ml-auto shrink-0 text-xs" style={{ color: '#4B5563' }}>{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div
+          className="absolute w-full mt-1 rounded-xl overflow-y-auto"
+          style={{ background: '#1e1e2e', border: '1px solid rgba(232,0,45,0.2)', maxHeight: '220px',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.8)', zIndex: 9999 }}
+        >
+          <div
+            className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:opacity-80 transition-opacity"
+            style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+            onClick={() => { onChange(''); setOpen(false) }}
+          >
+            <span className="text-xs" style={{ color: '#6B7280' }}>— Sin selección —</span>
+          </div>
+          {pilotos.map(p => {
+            const eq = p.f1_piloto_escuderia?.[0]?.f1_escuderias
+            const tc = eq?.color ?? '#4B5563'
+            const isSelected = String(p.id_piloto) === value
+            return (
+              <div
+                key={p.id_piloto}
+                className="flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-all hover:opacity-90"
+                style={{
+                  background: isSelected ? `${accentColor}18` : 'transparent',
+                  borderLeft: isSelected ? `2px solid ${accentColor}` : '2px solid transparent'
+                }}
+                onClick={() => { onChange(String(p.id_piloto)); setOpen(false) }}
+              >
+                {eq?.logo
+                  ? <img src={eq.logo} alt={eq.nombre} className="w-6 h-6 object-contain shrink-0" />
+                  : <div className="w-6 h-6 rounded-full shrink-0" style={{ background: tc }} />
+                }
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-white truncate">#{p.numero ?? '–'} {p.nombre}</p>
+                  {eq && <p className="text-[10px] truncate" style={{ color: tc }}>{eq.nombre}</p>}
+                </div>
+                {isSelected && <span style={{ color: accentColor }}>✓</span>}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -155,11 +215,12 @@ function CarreraCard ({
 
   return (
     <div
-      className="rounded-2xl overflow-hidden transition-all"
+      className="rounded-2xl transition-all"
       style={{
         background: '#1e1e2e',
         border: `1px solid ${cfg.color}33`,
-        opacity: carrera.estado === 'cancelada' ? 0.5 : 1
+        opacity: carrera.estado === 'cancelada' ? 0.5 : 1,
+        position: 'relative'
       }}
     >
       {/* Header */}
