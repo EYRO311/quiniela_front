@@ -13,6 +13,8 @@ export async function updateUsuario (id: string, data: {
   nombre?: string
   correo?: string
   username?: string
+  telefono?: string
+  futbol_f1?: string
 }) {
   const res = await fetch(`${API_URL}/usuarios/${id}`, {
     method: 'PATCH',

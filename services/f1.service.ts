@@ -1,37 +1,22 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
-export async function getF1Pilotos () {
-  const res = await fetch(`${API_URL}/f1/pilotos`)
+async function get (path: string) {
+  const res = await fetch(`${API_URL}/f1/${path}`)
   if (!res.ok) {
     const json = await res.json().catch(() => ({ error: 'Error del servidor' }))
-    throw new Error(json.error || 'Error al obtener pilotos')
+    throw new Error(json.error || `Error al obtener ${path}`)
   }
   return res.json()
 }
 
-export async function getF1Escuderias () {
-  const res = await fetch(`${API_URL}/f1/escuderias`)
-  if (!res.ok) {
-    const json = await res.json().catch(() => ({ error: 'Error del servidor' }))
-    throw new Error(json.error || 'Error al obtener escuderías')
-  }
-  return res.json()
-}
+// ── Datos desde DB ──────────────────────────────────
+export const getF1Pilotos         = () => get('pilotos')
+export const getF1Escuderias      = () => get('escuderias')
+export const getF1Carreras        = () => get('carreras')
+export const getF1Campeonato      = () => get('campeonato')
 
-export async function getF1Carreras () {
-  const res = await fetch(`${API_URL}/f1/carreras`)
-  if (!res.ok) {
-    const json = await res.json().catch(() => ({ error: 'Error del servidor' }))
-    throw new Error(json.error || 'Error al obtener carreras')
-  }
-  return res.json()
-}
-
-export async function getF1Campeonato () {
-  const res = await fetch(`${API_URL}/f1/campeonato`)
-  if (!res.ok) {
-    const json = await res.json().catch(() => ({ error: 'Error del servidor' }))
-    throw new Error(json.error || 'Error al obtener campeonato')
-  }
-  return res.json()
-}
+// ── Datos en tiempo real desde Jolpica API ──────────
+export const getF1StandingsPilotos      = () => get('standings/pilotos')
+export const getF1StandingsConstructores = () => get('standings/constructores')
+export const getF1CalendarioAPI         = () => get('calendario')
+export const getF1UltimoResultado       = () => get('ultimo-resultado')

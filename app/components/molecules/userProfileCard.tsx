@@ -9,30 +9,43 @@ interface Usuario {
   nombre: string | null
   correo: string | null
   puntos_totales: number
+  telefono: string | null
+  tipo_user: string | null
+  futbol_f1: 'futbol' | 'f1' | 'ambos' | null
+  created_at: string | null
+  last_sign_in_at: string | null
 }
 
 interface Props {
   usuario: Usuario
-  onUpdated: (u: Usuario) => void 
+  onUpdated: (u: Partial<Usuario>) => void
 }
 
-const fieldClass = 'w-full bg-transparent border-b text-sm text-white pb-1 focus:outline-none placeholder-gray-600 transition-colors'
+function formatDate (iso: string | null) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 export default function UserProfileCard ({ usuario, onUpdated }: Props) {
   const [editing, setEditing] = useState(false)
   const [nombre, setNombre] = useState(usuario.nombre ?? '')
   const [correo, setCorreo] = useState(usuario.correo ?? '')
   const [username, setUsername] = useState(usuario.username)
+  const [telefono, setTelefono] = useState(usuario.telefono ?? '')
+  const [futbolF1, setFutbolF1] = useState<'futbol' | 'f1' | 'ambos'>(usuario.futbol_f1 ?? 'ambos')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const initials = (usuario.nombre ?? usuario.username).slice(0, 2).toUpperCase()
+  const esAdmin = usuario.tipo_user === 'admin'
 
   const handleSave = async () => {
     setError('')
     setLoading(true)
     try {
-      const res = await updateUsuario(usuario.id_random, { nombre, correo, username })
+      const res = await updateUsuario(usuario.id_random, { nombre, correo, username, telefono, futbol_f1: futbolF1 })
+      localStorage.setItem('futbol_f1', futbolF1)
+      window.dispatchEvent(new Event('futbol_f1_changed'))
       onUpdated(res.user)
       setEditing(false)
     } catch (err: unknown) {
@@ -46,6 +59,8 @@ export default function UserProfileCard ({ usuario, onUpdated }: Props) {
     setNombre(usuario.nombre ?? '')
     setCorreo(usuario.correo ?? '')
     setUsername(usuario.username)
+    setTelefono(usuario.telefono ?? '')
+    setFutbolF1(usuario.futbol_f1 ?? 'ambos')
     setError('')
     setEditing(false)
   }
@@ -64,9 +79,20 @@ export default function UserProfileCard ({ usuario, onUpdated }: Props) {
           {initials}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-black text-white text-lg leading-tight truncate">
-            {usuario.nombre ?? usuario.username}
-          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-black text-white text-lg leading-tight truncate">
+              {usuario.nombre ?? usuario.username}
+            </p>
+            <span
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
+              style={esAdmin
+                ? { background: 'rgba(251,191,36,0.15)', color: '#FCD34D', border: '1px solid rgba(251,191,36,0.3)' }
+                : { background: 'rgba(74,222,128,0.1)', color: '#4ADE80', border: '1px solid rgba(74,222,128,0.2)' }
+              }
+            >
+              {esAdmin ? '★ Admin' : 'Jugador'}
+            </span>
+          </div>
           <p className="text-xs mt-0.5" style={{ color: '#6B7280' }}>@{usuario.username}</p>
         </div>
         {!editing && (
@@ -80,35 +106,49 @@ export default function UserProfileCard ({ usuario, onUpdated }: Props) {
         )}
       </div>
 
-      {/* Fields */}
+      {/* Campos editables */}
       <div className="space-y-4">
-        <Field
-          label="Nombre completo"
-          value={editing ? nombre : (usuario.nombre ?? '—')}
-          editing={editing}
-          placeholder="Tu nombre"
-          onChange={setNombre}
-          accentColor="#4ADE80"
-        />
-        <Field
-          label="Usuario"
-          value={editing ? username : usuario.username}
-          editing={editing}
-          placeholder="username"
-          onChange={setUsername}
-          accentColor="#60A5FA"
-        />
-        <Field
-          label="Correo"
-          value={editing ? correo : (usuario.correo ?? '—')}
-          editing={editing}
-          placeholder="email@ejemplo.com"
-          onChange={setCorreo}
-          accentColor="#F87171"
-        />
+        <Field label="Nombre completo" value={editing ? nombre : (usuario.nombre ?? '')}
+          editing={editing} placeholder="Tu nombre" onChange={setNombre} accentColor="#4ADE80" />
+        <Field label="Usuario" value={editing ? username : usuario.username}
+          editing={editing} placeholder="username" onChange={setUsername} accentColor="#60A5FA" />
+        <Field label="Correo" value={editing ? correo : (usuario.correo ?? '')}
+          editing={editing} placeholder="email@ejemplo.com" onChange={setCorreo} accentColor="#F87171" />
+        <Field label="Teléfono" value={editing ? telefono : (usuario.telefono ?? '')}
+          editing={editing} placeholder="+52 55 0000 0000" onChange={setTelefono} accentColor="#C084FC" />
+
+        {/* Preferencia Fútbol / F1 */}
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: '#F59E0B' }}>
+            Intereses
+          </p>
+          {editing ? (
+            <select
+              value={futbolF1}
+              onChange={e => setFutbolF1(e.target.value as 'futbol' | 'f1' | 'ambos')}
+              className="w-full bg-transparent text-sm text-white pb-1 focus:outline-none"
+              style={{ borderBottom: '1px solid rgba(245,158,11,0.4)', appearance: 'none' }}
+            >
+              <option value="ambos" style={{ background: '#0D1B2A' }}>⚽🏎️ Fútbol + F1</option>
+              <option value="futbol" style={{ background: '#0D1B2A' }}>⚽ Solo Fútbol</option>
+              <option value="f1" style={{ background: '#0D1B2A' }}>🏎️ Solo F1</option>
+            </select>
+          ) : (
+            <p className="text-sm text-white">
+              {usuario.futbol_f1 === 'futbol' ? '⚽ Solo Fútbol' : usuario.futbol_f1 === 'f1' ? '🏎️ Solo F1' : '⚽🏎️ Fútbol + F1'}
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* Error */}
+      {/* Campos de solo lectura */}
+      {!editing && (
+        <div className="grid grid-cols-2 gap-3 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <ReadonlyField label="Miembro desde" value={formatDate(usuario.created_at)} />
+          <ReadonlyField label="Último acceso" value={formatDate(usuario.last_sign_in_at)} />
+        </div>
+      )}
+
       {error && (
         <p
           className="text-xs rounded-xl px-3 py-2"
@@ -118,7 +158,6 @@ export default function UserProfileCard ({ usuario, onUpdated }: Props) {
         </p>
       )}
 
-      {/* Edit actions */}
       {editing && (
         <div className="flex gap-2 pt-1">
           <button
@@ -147,15 +186,9 @@ export default function UserProfileCard ({ usuario, onUpdated }: Props) {
   )
 }
 
-function Field ({
-  label, value, editing, placeholder, onChange, accentColor
-}: {
-  label: string
-  value: string
-  editing: boolean
-  placeholder: string
-  onChange: (v: string) => void
-  accentColor: string
+function Field ({ label, value, editing, placeholder, onChange, accentColor }: {
+  label: string; value: string; editing: boolean
+  placeholder: string; onChange: (v: string) => void; accentColor: string
 }) {
   return (
     <div>
@@ -168,12 +201,23 @@ function Field ({
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
-          className={`w-full bg-transparent text-sm text-white pb-1 focus:outline-none placeholder-gray-600`}
+          className="w-full bg-transparent text-sm text-white pb-1 focus:outline-none placeholder-gray-600"
           style={{ borderBottom: `1px solid ${accentColor}55` }}
         />
       ) : (
         <p className="text-sm text-white truncate">{value || '—'}</p>
       )}
+    </div>
+  )
+}
+
+function ReadonlyField ({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: '#4B5563' }}>
+        {label}
+      </p>
+      <p className="text-xs text-white">{value}</p>
     </div>
   )
 }

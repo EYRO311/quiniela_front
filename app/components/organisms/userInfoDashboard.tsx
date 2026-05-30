@@ -9,6 +9,11 @@ import UserProfileCard from '@/app/components/molecules/userProfileCard'
 import CreateQuinielaModal from '@/app/components/organisms/createQuinielaModal'
 import JoinQuinielaModal from '@/app/components/organisms/joinQuinielaModal'
 import ParticipantesModal from '@/app/components/organisms/participantesModal'
+import WorldCupCountdown from '@/app/components/molecules/WorldCupCountdown'
+import F1NextRaceCountdown from '@/app/components/molecules/F1NextRaceCountdown'
+import { getTheme } from '@/lib/theme'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 interface Usuario {
   id_random: string
@@ -16,6 +21,11 @@ interface Usuario {
   nombre: string | null
   correo: string | null
   puntos_totales: number
+  telefono: string | null
+  tipo_user: string | null
+  created_at: string | null
+  last_sign_in_at: string | null
+  futbol_f1: 'futbol' | 'f1' | 'ambos' | null
 }
 
 interface QuinielaUsuario {
@@ -47,10 +57,30 @@ interface SelectedQuiniela {
 
 interface Props { idUsuario: string }
 
+interface ProximoPartido {
+  fecha: string
+  equipo_local?: string
+  equipo_visitante?: string
+  nombre_local?: string
+  nombre_visitante?: string
+  [key: string]: unknown
+}
+
+interface CarreraF1 {
+  round: number
+  nombre_gp: string
+  circuito: string
+  pais: string
+  fecha_carrera: string
+  estado: string
+}
+
 export default function UserInfoDashboard ({ idUsuario }: Props) {
   const [usuario, setUsuario] = useState<Usuario | null>(null)
   const [quinielas, setQuinielas] = useState<QuinielaUsuario[]>([])
   const [rankings, setRankings] = useState<RankingItem[]>([])
+  const [proximoPartido, setProximoPartido] = useState<ProximoPartido | null>(null)
+  const [proximaCarrera, setProximaCarrera] = useState<CarreraF1 | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
   const [showCreate, setShowCreate] = useState(false)
@@ -58,17 +88,22 @@ export default function UserInfoDashboard ({ idUsuario }: Props) {
   const [selectedQuiniela, setSelectedQuiniela] = useState<SelectedQuiniela | null>(null)
 
   useEffect(() => {
-    getUsuarioInfo(idUsuario)
-      .then((res: { usuario: Usuario; quinielas: QuinielaUsuario[]; rankings: RankingItem[] }) => {
+    Promise.allSettled([
+      getUsuarioInfo(idUsuario),
+      fetch(`${API_URL}/partidos/proximo`).then(r => r.json()),
+      fetch(`${API_URL}/f1/proximo`).then(r => r.json())
+    ]).then(([rU, rP, rF]) => {
+      if (rU.status === 'fulfilled') {
+        const res = rU.value as { usuario: Usuario; quinielas: QuinielaUsuario[]; rankings: RankingItem[] }
         setUsuario(res.usuario)
         setQuinielas(res.quinielas ?? [])
         setRankings(res.rankings ?? [])
-        setLoading(false)
-      })
-      .catch((err: unknown) => {
-        console.error(err)
-        setLoading(false)
-      })
+        localStorage.setItem('futbol_f1', res.usuario.futbol_f1 ?? 'ambos')
+        localStorage.setItem('tipo_user', res.usuario.tipo_user ?? 'normal')
+      }
+      if (rP.status === 'fulfilled') setProximoPartido((rP.value as { partido: ProximoPartido }).partido ?? null)
+      if (rF.status === 'fulfilled') setProximaCarrera((rF.value as { carrera: CarreraF1 }).carrera ?? null)
+    }).catch(console.error).finally(() => setLoading(false))
   }, [idUsuario, refreshKey])
 
   const handleRefresh = () => {
@@ -76,12 +111,14 @@ export default function UserInfoDashboard ({ idUsuario }: Props) {
     setRefreshKey(k => k + 1)
   }
 
+  const theme = getTheme(usuario?.futbol_f1 ?? (typeof window !== 'undefined' ? localStorage.getItem('futbol_f1') : null))
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center" style={{ background: '#060E1E' }}>
+      <div className="flex min-h-screen items-center justify-center" style={{ background: theme.pageBg }}>
         <div className="text-center space-y-3">
-          <div className="text-5xl animate-pulse">⚽</div>
-          <p className="text-sm font-medium tracking-widest uppercase" style={{ color: '#4ADE80' }}>Cargando...</p>
+          <div className="text-5xl animate-pulse">{theme.accent === '#E8002D' ? '🏎️' : '⚽'}</div>
+          <p className="text-sm font-medium tracking-widest uppercase" style={{ color: theme.accent }}>Cargando...</p>
         </div>
       </div>
     )
@@ -89,7 +126,7 @@ export default function UserInfoDashboard ({ idUsuario }: Props) {
 
   if (!usuario) {
     return (
-      <div className="flex min-h-screen items-center justify-center" style={{ background: '#060E1E' }}>
+      <div className="flex min-h-screen items-center justify-center" style={{ background: theme.pageBg }}>
         <p className="text-gray-400">No se encontró el usuario.</p>
       </div>
     )
@@ -98,7 +135,7 @@ export default function UserInfoDashboard ({ idUsuario }: Props) {
   const posicionGeneral = rankings?.[0]?.posicion ?? '—'
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#060E1E' }}>
+    <div className="flex min-h-screen" style={{ background: theme.pageBg }}>
       <AppSidebar />
 
       <main className="flex-1 px-4 pt-20 pb-6 md:py-6 sm:px-6 lg:px-8 overflow-auto">
@@ -108,27 +145,43 @@ export default function UserInfoDashboard ({ idUsuario }: Props) {
           <div
             className="rounded-2xl p-6 sm:p-8 relative overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, #003d20 0%, #001f5c 50%, #8b0000 100%)',
-              border: '1px solid rgba(74,222,128,0.2)'
+              background: theme.heroBg,
+              border: `1px solid ${theme.accentLight}`
             }}
           >
             <div className="absolute inset-0 opacity-5 pointer-events-none">
               <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white" />
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full border border-white" />
             </div>
-            <div className="absolute right-0 top-0 bottom-0 w-1.5" style={{ background: '#DC2626' }} />
-            <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ background: '#16A34A' }} />
+            <div className="absolute right-0 top-0 bottom-0 w-1.5" style={{ background: theme.heroRightBar }} />
+            <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ background: theme.heroLeftBar }} />
 
-            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-              <div>
-                <p className="text-sm font-medium mb-1" style={{ color: '#86EFAC' }}>¡Bienvenido de nuevo!</p>
-                <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">@{usuario.username}</h1>
-                {usuario.nombre && <p className="mt-1 text-sm" style={{ color: '#93C5FD' }}>{usuario.nombre}</p>}
+            <div className="relative z-10 space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                <div>
+                  <p className="text-sm font-medium mb-1" style={{ color: theme.heroAccentText }}>¡Bienvenido de nuevo!</p>
+                  <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">@{usuario.username}</h1>
+                  {usuario.nombre && <p className="mt-1 text-sm" style={{ color: theme.heroSubText }}>{usuario.nombre}</p>}
+                </div>
+                <div className="grid grid-cols-3 gap-4 sm:gap-8">
+                  <StatBlock value={usuario.puntos_totales ?? 0} label="Puntos" color={theme.statColor1} />
+                  <StatBlock value={posicionGeneral === '—' ? '—' : `#${posicionGeneral}`} label="Posición" color={theme.statColor2} />
+                  <StatBlock value={quinielas.length} label="Quinielas" color={theme.statColor3} />
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-4 sm:gap-8">
-                <StatBlock value={usuario.puntos_totales ?? 0} label="Puntos" color="#4ADE80" />
-                <StatBlock value={posicionGeneral === '—' ? '—' : `#${posicionGeneral}`} label="Posición" color="#60A5FA" />
-                <StatBlock value={quinielas.length} label="Quinielas" color="#F87171" />
+              <div className="pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                {(usuario.futbol_f1 === 'ambos' || usuario.futbol_f1 === null) && (
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <WorldCupCountdown proximoPartido={proximoPartido} />
+                    {proximaCarrera && <F1NextRaceCountdown carrera={proximaCarrera} />}
+                  </div>
+                )}
+                {usuario.futbol_f1 === 'futbol' && (
+                  <WorldCupCountdown proximoPartido={proximoPartido} />
+                )}
+                {usuario.futbol_f1 === 'f1' && proximaCarrera && (
+                  <F1NextRaceCountdown carrera={proximaCarrera} />
+                )}
               </div>
             </div>
           </div>
@@ -138,7 +191,7 @@ export default function UserInfoDashboard ({ idUsuario }: Props) {
             <button
               onClick={() => setShowCreate(true)}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-105"
-              style={{ background: 'linear-gradient(135deg, #006847, #16A34A)', color: 'white' }}
+              style={{ background: theme.buttonBg, color: 'white' }}
             >
               <span>🏆</span> Crear quiniela
             </button>
