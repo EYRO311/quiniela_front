@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-type Mode = 'login' | 'register'
+type Mode = 'login' | 'register' | 'forgot'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
@@ -18,9 +18,11 @@ export default function AuthPage () {
   const [loading, setLoading] = useState(false)
 
   const isLogin = mode === 'login'
+  const isRegister = mode === 'register'
+  const isForgot = mode === 'forgot'
 
-  const switchMode = () => {
-    setMode(m => (m === 'login' ? 'register' : 'login'))
+  const switchMode = (next: Mode) => {
+    setMode(next)
     setError('')
     setSuccess('')
   }
@@ -51,21 +53,34 @@ export default function AuthPage () {
           localStorage.setItem('username', data.user.username)
         }
         router.push('/user')
-      } else {
+      } else if (isRegister) {
         const username = formData.get('username') as string
         const nombre = formData.get('nombre') as string
+        const correo = formData.get('correo') as string
         const password = formData.get('password') as string
 
         const res = await fetch(`${API_URL}/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, nombre, password })
+          body: JSON.stringify({ username, nombre, correo, password })
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || 'Error inesperado')
 
         setSuccess('¡Cuenta creada! Ahora puedes iniciar sesión.')
-        setMode('login')
+        switchMode('login')
+      } else {
+        const correo = formData.get('correo') as string
+
+        const res = await fetch(`${API_URL}/forgot-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ correo })
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Error inesperado')
+
+        setSuccess(data.message)
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
@@ -102,22 +117,24 @@ export default function AuthPage () {
           <div className="w-12 h-0.5 mx-auto mb-10" style={{ background: '#D4AF37' }} />
 
           <h2 className="text-xl font-semibold text-white mb-3">
-            {isLogin ? '¿Nuevo por aquí?' : '¿Ya tienes cuenta?'}
+            {isLogin ? '¿Nuevo por aquí?' : isForgot ? '¿Recordaste tu contraseña?' : '¿Ya tienes cuenta?'}
           </h2>
           <p className="text-sm leading-relaxed mb-8" style={{ color: '#93C5FD' }}>
             {isLogin
               ? 'Regístrate y compite con tus amigos en la quiniela del Mundial'
+              : isForgot
+              ? 'Vuelve al inicio de sesión'
               : 'Inicia sesión y sigue el rastro de tus predicciones'}
           </p>
 
           <button
-            onClick={switchMode}
+            onClick={() => switchMode(isForgot ? 'login' : isLogin ? 'register' : 'login')}
             className="border text-white px-8 py-2.5 rounded-full text-xs font-semibold uppercase tracking-widest transition-all duration-200"
             style={{ borderColor: '#D4AF37', color: '#D4AF37' }}
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#D4AF37'; (e.currentTarget as HTMLButtonElement).style.color = '#060E1E' }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#D4AF37' }}
           >
-            {isLogin ? 'Crear cuenta' : 'Iniciar sesión'}
+            {isLogin ? 'Crear cuenta' : isForgot ? 'Iniciar sesión' : 'Iniciar sesión'}
           </button>
         </div>
       </div>
@@ -133,16 +150,19 @@ export default function AuthPage () {
 
         <div className="w-full max-w-sm">
           <h2 className="text-2xl font-bold text-gray-800 mb-1">
-            {isLogin ? 'Iniciar sesión' : 'Crear cuenta'}
+            {isLogin ? 'Iniciar sesión' : isForgot ? 'Recuperar contraseña' : 'Crear cuenta'}
           </h2>
           <p className="text-sm text-gray-400 mb-8">
-            {isLogin ? 'Ingresa tus credenciales para continuar' : 'Completa los datos para unirte'}
+            {isLogin
+              ? 'Ingresa tus credenciales para continuar'
+              : isForgot
+              ? 'Te enviaremos un enlace a tu correo'
+              : 'Completa los datos para unirte'}
           </p>
 
           <form action={handleAction} className="space-y-4">
 
-            {isLogin ? (
-              /* ── LOGIN ── */
+            {isLogin && (
               <div>
                 <label className={labelClass}>Usuario o correo</label>
                 <input
@@ -154,8 +174,9 @@ export default function AuthPage () {
                   className={inputClass}
                 />
               </div>
-            ) : (
-              /* ── REGISTER ── */
+            )}
+
+            {isRegister && (
               <>
                 <div>
                   <label className={labelClass}>Usuario</label>
@@ -182,17 +203,46 @@ export default function AuthPage () {
               </>
             )}
 
-            <div>
-              <label className={labelClass}>Contraseña</label>
-              <input
-                type="password"
-                name="password"
-                placeholder="mínimo 6 caracteres"
-                required
-                minLength={6}
-                className={inputClass}
-              />
-            </div>
+            {(isRegister || isForgot) && (
+              <div>
+                <label className={labelClass}>
+                  Correo electrónico{isRegister && <span className="text-gray-300 normal-case"> (opcional)</span>}
+                </label>
+                <input
+                  type="email"
+                  name="correo"
+                  placeholder="email@ejemplo.com"
+                  required={isForgot}
+                  className={inputClass}
+                />
+              </div>
+            )}
+
+            {!isForgot && (
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className={labelClass} style={{ margin: 0 }}>Contraseña</label>
+                  {isLogin && (
+                    <button
+                      type="button"
+                      onClick={() => switchMode('forgot')}
+                      className="text-xs hover:underline"
+                      style={{ color: '#1D4ED8' }}
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="mínimo 6 caracteres"
+                  required
+                  minLength={6}
+                  className={inputClass}
+                />
+              </div>
+            )}
 
             {error && (
               <div className="text-red-600 text-sm bg-red-50 border border-red-100 rounded-xl px-4 py-3">
@@ -214,15 +264,37 @@ export default function AuthPage () {
                 cursor: loading ? 'not-allowed' : 'pointer'
               }}
             >
-              {loading ? 'Cargando...' : isLogin ? 'Iniciar sesión' : 'Registrarse'}
+              {loading
+                ? 'Cargando...'
+                : isLogin
+                ? 'Iniciar sesión'
+                : isForgot
+                ? 'Enviar enlace'
+                : 'Registrarse'}
             </button>
+
+            {isForgot && (
+              <button
+                type="button"
+                onClick={() => switchMode('login')}
+                className="w-full py-2 text-sm text-gray-500 hover:underline"
+              >
+                Volver al inicio de sesión
+              </button>
+            )}
           </form>
 
           <p className="md:hidden text-center text-sm text-gray-500 mt-6">
-            {isLogin ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? '}
-            <button onClick={switchMode} className="font-semibold hover:underline" style={{ color: '#1D4ED8' }}>
-              {isLogin ? 'Regístrate aquí' : 'Inicia sesión'}
-            </button>
+            {isLogin ? '¿No tienes cuenta? ' : isForgot ? '' : '¿Ya tienes cuenta? '}
+            {!isForgot && (
+              <button
+                onClick={() => switchMode(isLogin ? 'register' : 'login')}
+                className="font-semibold hover:underline"
+                style={{ color: '#1D4ED8' }}
+              >
+                {isLogin ? 'Regístrate aquí' : 'Inicia sesión'}
+              </button>
+            )}
           </p>
         </div>
       </div>

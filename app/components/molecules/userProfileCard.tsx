@@ -13,7 +13,7 @@ interface Usuario {
 
 interface Props {
   usuario: Usuario
-  onUpdated: (u: Usuario) => void
+  onUpdated: (u: Usuario) => void 
 }
 
 const fieldClass = 'w-full bg-transparent border-b text-sm text-white pb-1 focus:outline-none placeholder-gray-600 transition-colors'
