@@ -41,16 +41,17 @@ export default function PrediccionCard ({
   const finalizado = estado === 'finalizado'
   const enVivo = estado === 'en_vivo'
 
-  // TEMPORAL: candado de cierre desactivado a petición del usuario (volver a activar después)
-  // const puedeEditar = pendiente
-  const puedeEditar = true
+  const puedeEditar = pendiente
 
-  const estadoBadge = {
-    pendiente: { label: 'Pendiente', color: '#60A5FA', bg: 'rgba(96,165,250,0.12)' },
-    en_vivo: { label: 'EN VIVO', color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
-    finalizado: { label: 'Final', color: '#6B7280', bg: 'rgba(107,114,128,0.12)' },
-    cancelado: { label: 'Cancelado', color: '#F87171', bg: 'rgba(248,113,113,0.12)' }
-  }[estado] ?? { label: estado, color: '#6B7280', bg: 'rgba(107,114,128,0.12)' }
+  const estadoBadge = pendiente
+    ? (predExistente
+      ? { label: 'Predicción guardada', color: '#4ADE80', bg: 'rgba(74,222,128,0.12)' }
+      : { label: 'Pendiente de predicción', color: '#60A5FA', bg: 'rgba(96,165,250,0.12)' })
+    : {
+      en_vivo: { label: 'Pendiente de resultado', color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
+      finalizado: { label: 'Final', color: '#6B7280', bg: 'rgba(107,114,128,0.12)' },
+      cancelado: { label: 'Cancelado', color: '#F87171', bg: 'rgba(248,113,113,0.12)' }
+    }[estado] ?? { label: estado, color: '#6B7280', bg: 'rgba(107,114,128,0.12)' }
 
   const handleSave = async () => {
     setError('')
