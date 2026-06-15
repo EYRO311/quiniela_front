@@ -3,9 +3,12 @@
 import { useEffect, useState } from 'react'
 import AppSidebar from '@/app/components/layout/appSidebar'
 import PrediccionCard from '@/app/components/molecules/prediccionCard'
+import PrediccionFinalCard from '@/app/components/molecules/prediccionFinalCard'
 import { getUsuarioInfo } from '@/services/usuario.service'
-import { getPartidos } from '@/services/partidos.service'
+import { getPartidos, getProximoPartido } from '@/services/partidos.service'
 import { getPronosticos } from '@/services/pronosticos.service'
+import { getEquipos } from '@/services/equipos.service'
+import { getPrediccionFinal } from '@/services/prediccionFinal.service'
 
 interface Partido {
   id_partido: string
@@ -42,6 +45,28 @@ interface QuinielaUsuario {
   quinielas: Quiniela | null
 }
 
+interface Equipo {
+  id_equipo: string
+  nombre_pais: string
+  escudo_url: string | null
+}
+
+interface PrediccionFinal {
+  id_equipo_campeon: string
+  id_equipo_subcampeon: string
+  puntos_obtenidos: number
+}
+
+type Filtro = 'hoy' | 'proximos' | 'todos'
+
+function esHoy (fechaIso: string): boolean {
+  const hoy = new Date()
+  const fecha = new Date(fechaIso)
+  return fecha.getFullYear() === hoy.getFullYear() &&
+    fecha.getMonth() === hoy.getMonth() &&
+    fecha.getDate() === hoy.getDate()
+}
+
 const FASE_ORDER = ['grupos', 'dieciseisavos', 'octavos', 'cuartos', 'semifinal', 'tercer_lugar', 'final']
 const FASE_LABEL: Record<string, string> = {
   grupos: 'Fase de Grupos',
@@ -57,9 +82,28 @@ export default function PrediccionesDashboard ({ idUsuario }: { idUsuario: strin
   const [quinielas, setQuinielas] = useState<Quiniela[]>([])
   const [selectedQuiniela, setSelectedQuiniela] = useState<Quiniela | null>(null)
   const [partidos, setPartidos] = useState<Partido[]>([])
+  const [proximo, setProximo] = useState<Partido | null>(null)
   const [pronosticos, setPronosticos] = useState<Record<string, Pronostico>>({})
   const [loadingQuinielas, setLoadingQuinielas] = useState(true)
   const [loadingPartidos, setLoadingPartidos] = useState(false)
+  const [filtro, setFiltro] = useState<Filtro>('hoy')
+  const [equipos, setEquipos] = useState<Equipo[]>([])
+  const [prediccionFinal, setPrediccionFinal] = useState<PrediccionFinal | null>(null)
+  const [fechaLimiteFinal, setFechaLimiteFinal] = useState<string>('')
+
+  // Cargar próximo partido
+  useEffect(() => {
+    getProximoPartido()
+      .then((res: { partido: Partido | null }) => setProximo(res.partido ?? null))
+      .catch(() => {})
+  }, [])
+
+  // Cargar equipos (para la predicción final)
+  useEffect(() => {
+    getEquipos()
+      .then((res: { equipos: Equipo[] }) => setEquipos(res.equipos ?? []))
+      .catch(() => {})
+  }, [])
 
   // Cargar quinielas del usuario
   useEffect(() => {
@@ -99,9 +143,30 @@ export default function PrediccionesDashboard ({ idUsuario }: { idUsuario: strin
       .catch(() => setLoadingPartidos(false))
   }, [idUsuario, selectedQuiniela])
 
-  // Agrupar partidos por fase → grupo
+  // Cargar predicción final cuando cambia la quiniela
+  useEffect(() => {
+    if (!selectedQuiniela) return
+    getPrediccionFinal(idUsuario, selectedQuiniela.id_quiniela)
+      .then((res: { prediccion: PrediccionFinal | null; fechaLimite: string }) => {
+        setPrediccionFinal(res.prediccion ?? null)
+        setFechaLimiteFinal(res.fechaLimite)
+      })
+      .catch(() => {})
+  }, [idUsuario, selectedQuiniela])
+
+  // Filtrar partidos según el filtro seleccionado, ordenados por hora
+  const ahora = Date.now()
+  const partidosFiltrados = partidos
+    .filter(p => {
+      if (filtro === 'hoy') return esHoy(p.fecha)
+      if (filtro === 'proximos') return new Date(p.fecha).getTime() >= ahora
+      return true
+    })
+    .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+
+  // Agrupar partidos por fase → grupo (solo para el filtro "Todos")
   const byFase = FASE_ORDER.reduce<Record<string, Partido[]>>((acc, fase) => {
-    const list = partidos.filter(p => p.fase === fase)
+    const list = partidosFiltrados.filter(p => p.fase === fase)
     if (list.length > 0) acc[fase] = list
     return acc
   }, {})
@@ -126,6 +191,26 @@ export default function PrediccionesDashboard ({ idUsuario }: { idUsuario: strin
             </div>
             <span className="text-4xl">🎯</span>
           </div>
+
+          {/* Próximo partido */}
+          {proximo && (
+            <div
+              className="rounded-2xl p-5 flex items-center gap-4"
+              style={{ background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.25)' }}
+            >
+              <span className="text-3xl">⏭️</span>
+              <div className="flex-1">
+                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: '#D4AF37' }}>Próximo partido</p>
+                <p className="text-white font-black text-lg">{proximo.equipo_a} vs {proximo.equipo_b}</p>
+                <p className="text-sm" style={{ color: '#9CA3AF' }}>
+                  {new Date(proximo.fecha).toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'short' })}
+                  {' · '}
+                  {new Date(proximo.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                  {proximo.estadio ? ` · ${proximo.estadio}` : ''}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Selector de quiniela */}
           {loadingQuinielas ? (
@@ -167,6 +252,18 @@ export default function PrediccionesDashboard ({ idUsuario }: { idUsuario: strin
             </div>
           )}
 
+          {/* Predicción final (finalistas + campeón) */}
+          {selectedQuiniela && equipos.length > 0 && fechaLimiteFinal && (
+            <PrediccionFinalCard
+              idQuiniela={selectedQuiniela.id_quiniela}
+              idUsuario={idUsuario}
+              equipos={equipos}
+              prediccionExistente={prediccionFinal}
+              cerrado={new Date() > new Date(fechaLimiteFinal)}
+              fechaLimite={fechaLimiteFinal}
+            />
+          )}
+
           {/* Progreso */}
           {selectedQuiniela && !loadingPartidos && partidos.length > 0 && (
             <div
@@ -188,6 +285,49 @@ export default function PrediccionesDashboard ({ idUsuario }: { idUsuario: strin
             </div>
           )}
 
+          {/* Filtro de partidos */}
+          {selectedQuiniela && !loadingPartidos && partidos.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {([
+                { id: 'hoy', label: '📅 Hoy' },
+                { id: 'proximos', label: '⏭️ Próximos' },
+                { id: 'todos', label: '🗂️ Todos' }
+              ] as { id: Filtro; label: string }[]).map(opt => {
+                const active = filtro === opt.id
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setFiltro(opt.id)}
+                    className="px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:scale-105"
+                    style={{
+                      background: active ? 'linear-gradient(135deg, #006847, #16A34A)' : '#0D1B2A',
+                      color: active ? 'white' : '#9CA3AF',
+                      border: active ? 'none' : '1px solid rgba(255,255,255,0.08)'
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Sin partidos para el filtro seleccionado */}
+          {selectedQuiniela && !loadingPartidos && partidos.length > 0 && partidosFiltrados.length === 0 && (
+            <div
+              className="rounded-2xl p-8 text-center"
+              style={{ background: '#0D1B2A', border: '1px solid rgba(255,255,255,0.06)' }}
+            >
+              <p className="text-4xl mb-3">📭</p>
+              <p className="font-semibold text-white">
+                {filtro === 'hoy' ? 'No hay partidos programados para hoy' : 'No hay partidos para mostrar'}
+              </p>
+              <p className="text-sm mt-1" style={{ color: '#6B7280' }}>
+                Prueba con el filtro &quot;Próximos&quot; o &quot;Todos&quot;
+              </p>
+            </div>
+          )}
+
           {/* Loading partidos */}
           {loadingPartidos && (
             <div className="py-16 text-center">
@@ -196,8 +336,42 @@ export default function PrediccionesDashboard ({ idUsuario }: { idUsuario: strin
             </div>
           )}
 
-          {/* Partidos por fase */}
-          {!loadingPartidos && selectedQuiniela && Object.entries(byFase).map(([fase, listaFase]) => {
+          {/* Partidos ordenados por hora (filtro Hoy / Próximos) */}
+          {!loadingPartidos && selectedQuiniela && filtro !== 'todos' && partidosFiltrados.length > 0 && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {partidosFiltrados.map(p => (
+                <PrediccionCard
+                  key={p.id_partido}
+                  idQuiniela={selectedQuiniela.id_quiniela}
+                  idUsuario={idUsuario}
+                  idPartido={p.id_partido}
+                  equipoA={p.equipo_a}
+                  equipoB={p.equipo_b}
+                  escudoA={p.escudo_a}
+                  escudoB={p.escudo_b}
+                  fecha={p.fecha}
+                  estadio={p.estadio}
+                  ciudad={p.ciudad}
+                  estado={p.estado}
+                  grupo={p.grupo}
+                  jornada={p.jornada}
+                  predExistente={
+                    pronosticos[p.id_partido]
+                      ? { golesA: pronosticos[p.id_partido].goles_a_pred, golesB: pronosticos[p.id_partido].goles_b_pred }
+                      : null
+                  }
+                  resultadoFinal={
+                    p.goles_a !== null && p.goles_b !== null
+                      ? { golesA: p.goles_a, golesB: p.goles_b }
+                      : null
+                  }
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Partidos por fase (filtro Todos) */}
+          {!loadingPartidos && selectedQuiniela && filtro === 'todos' && Object.entries(byFase).map(([fase, listaFase]) => {
             const poreGrupo = fase === 'grupos'
               ? listaFase.reduce<Record<string, Partido[]>>((acc, p) => {
                   const g = p.grupo ?? 'SIN GRUPO'

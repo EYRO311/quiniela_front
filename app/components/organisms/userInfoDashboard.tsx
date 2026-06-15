@@ -59,10 +59,14 @@ interface Props { idUsuario: string }
 
 interface ProximoPartido {
   fecha: string
-  equipo_local?: string
-  equipo_visitante?: string
-  nombre_local?: string
-  nombre_visitante?: string
+  equipo_a?: string
+  equipo_b?: string
+  escudo_a?: string | null
+  escudo_b?: string | null
+  estadio?: string | null
+  ciudad?: string | null
+  grupo?: string | null
+  fase?: string
   [key: string]: unknown
 }
 

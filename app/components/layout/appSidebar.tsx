@@ -11,12 +11,14 @@ const IconPred  = () => <svg viewBox="0 0 24 24" fill="currentColor" className="
 const IconRank  = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M7 20h2V8H7v12zm4 0h2V4h-2v16zm4 0h2v-8h-2v8z" /></svg>
 const IconF1    = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M18.92 5.01C18.72 4.42 18.16 4 17.5 4h-11c-.66 0-1.21.42-1.42 1.01L3 11v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 6h10.29l1.08 3.11H5.77L6.85 6zM19 17H5v-6h14v6zm-9.5-1c.83 0 1.5-.67 1.5-1.5S10.33 13 9.5 13 8 13.67 8 14.5 8.67 16 9.5 16zm5 0c.83 0 1.5-.67 1.5-1.5S15.33 13 14.5 13 13 13.67 13 14.5s.67 1.5 1.5 1.5z" /></svg>
 const IconProno = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z" /></svg>
+const IconShield = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M12 2l8 3v6c0 5-3.5 9.5-8 11-4.5-1.5-8-6-8-11V5l8-3z" /></svg>
 
 /* ── Definición de menús por preferencia ── */
 const NAV_FUTBOL = [
   { href: '/user',        label: 'Inicio',       icon: <IconHome />,  badge: null },
   { href: '/partidos',    label: 'Partidos',      icon: <IconBall />,  badge: '⚽' },
   { href: '/predicciones',label: 'Predicciones',  icon: <IconPred />,  badge: '⚽' },
+  { href: '/equipos',     label: 'Equipos',       icon: <IconShield />,badge: '⚽' },
   { href: '/rankings',    label: 'Rankings',      icon: <IconRank />,  badge: null }
 ]
 
@@ -31,12 +33,14 @@ const NAV_AMBOS = [
   { href: '/user',            label: 'Inicio',        icon: <IconHome />,  badge: null },
   { href: '/partidos',        label: 'Partidos',       icon: <IconBall />,  badge: '⚽' },
   { href: '/predicciones',    label: 'Predicciones',   icon: <IconPred />,  badge: '⚽' },
+  { href: '/equipos',         label: 'Equipos',        icon: <IconShield />,badge: '⚽' },
   { href: '/rankings',        label: 'Rankings',       icon: <IconRank />,  badge: null },
   { href: '/f1',              label: 'F1',             icon: <IconF1 />,    badge: '🏎️' },
   { href: '/f1/pronosticos',  label: 'Pronóst. F1',   icon: <IconProno />, badge: '🏎️' }
 ]
 
 const NAV_SYNC = { href: '/f1/sync', label: 'Sync F1', icon: <IconRank />, badge: '🏎️' }
+const NAV_RESULTADOS = { href: '/admin/resultados', label: 'Resultados', icon: <IconRank />, badge: '⚙️' }
 
 function getNav (pref: string) {
   if (pref === 'futbol') return NAV_FUTBOL
@@ -57,6 +61,7 @@ export default function AppSidebar () {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [pref, setPref] = useState('ambos')
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isEyro, setIsEyro] = useState(false)
   const [theme, setTheme] = useState<Theme>(getTheme('ambos'))
 
   useEffect(() => {
@@ -64,18 +69,21 @@ export default function AppSidebar () {
     setPref(p)
     setTheme(getTheme(p))
     setIsAdmin(localStorage.getItem('tipo_user') === 'admin')
+    setIsEyro(localStorage.getItem('username') === 'EYRO')
     const handler = () => {
       const np = localStorage.getItem('futbol_f1') ?? 'ambos'
       setPref(np)
       setTheme(getTheme(np))
       setIsAdmin(localStorage.getItem('tipo_user') === 'admin')
+      setIsEyro(localStorage.getItem('username') === 'EYRO')
     }
     window.addEventListener('futbol_f1_changed', handler)
     return () => window.removeEventListener('futbol_f1_changed', handler)
   }, [])
 
   const baseNav = getNav(pref)
-  const nav = isAdmin && pref !== 'futbol' ? [...baseNav, NAV_SYNC] : baseNav
+  const navConSync = isAdmin && pref !== 'futbol' ? [...baseNav, NAV_SYNC] : baseNav
+  const nav = isEyro ? [...navConSync, NAV_RESULTADOS] : navConSync
 
   const handleLogout = () => {
     document.cookie = 'userId=; path=/; max-age=0; SameSite=Lax'

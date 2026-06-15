@@ -6,11 +6,14 @@ const WORLD_CUP_START = new Date('2026-06-12T00:00:00Z')
 
 interface ProximoPartido {
   fecha: string
-  equipo_local?: string
-  equipo_visitante?: string
-  nombre_local?: string
-  nombre_visitante?: string
-  grupo?: string
+  equipo_a?: string
+  equipo_b?: string
+  escudo_a?: string | null
+  escudo_b?: string | null
+  estadio?: string | null
+  ciudad?: string | null
+  grupo?: string | null
+  fase?: string
   [key: string]: unknown
 }
 
@@ -51,8 +54,8 @@ export default function WorldCupCountdown ({ proximoPartido }: Props) {
     return () => clearInterval(id)
   }, [target.toISOString()])
 
-  const local = proximoPartido?.equipo_local ?? proximoPartido?.nombre_local
-  const visitante = proximoPartido?.equipo_visitante ?? proximoPartido?.nombre_visitante
+  const local = proximoPartido?.equipo_a
+  const visitante = proximoPartido?.equipo_b
   const tienePartido = local && visitante
 
   if (tiempo.terminado && !tienePartido) {
@@ -70,11 +73,19 @@ export default function WorldCupCountdown ({ proximoPartido }: Props) {
       </p>
 
       {tienePartido && (
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-black text-white">{local}</span>
-          <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-            style={{ background: 'rgba(74,222,128,0.15)', color: '#4ADE80' }}>VS</span>
-          <span className="text-sm font-black text-white">{visitante}</span>
+        <div className="flex flex-col items-center gap-1">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-black text-white">{local}</span>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+              style={{ background: 'rgba(74,222,128,0.15)', color: '#4ADE80' }}>VS</span>
+            <span className="text-sm font-black text-white">{visitante}</span>
+          </div>
+          <p className="text-xs" style={{ color: '#6B7280' }}>
+            {new Date(proximoPartido!.fecha).toLocaleDateString('es-MX', { weekday: 'long', day: '2-digit', month: 'short' })}
+            {' · '}
+            {new Date(proximoPartido!.fecha).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+            {proximoPartido?.estadio ? ` · ${proximoPartido.estadio}` : ''}
+          </p>
         </div>
       )}
 
