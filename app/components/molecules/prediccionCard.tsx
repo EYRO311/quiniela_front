@@ -40,18 +40,21 @@ export default function PrediccionCard ({
   const pendiente = estado === 'pendiente'
   const finalizado = estado === 'finalizado'
   const enVivo = estado === 'en_vivo'
+  const yaInicio = new Date(fecha) <= new Date()
 
-  const puedeEditar = pendiente
+  const puedeEditar = pendiente && !yaInicio
 
-  const estadoBadge = pendiente
+  const estadoBadge = (pendiente && !yaInicio)
     ? (predExistente
       ? { label: 'Predicción guardada', color: '#4ADE80', bg: 'rgba(74,222,128,0.12)' }
       : { label: 'Pendiente de predicción', color: '#60A5FA', bg: 'rgba(96,165,250,0.12)' })
-    : {
-      en_vivo: { label: 'Pendiente de resultado', color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
-      finalizado: { label: 'Final', color: '#6B7280', bg: 'rgba(107,114,128,0.12)' },
-      cancelado: { label: 'Cancelado', color: '#F87171', bg: 'rgba(248,113,113,0.12)' }
-    }[estado] ?? { label: estado, color: '#6B7280', bg: 'rgba(107,114,128,0.12)' }
+    : (pendiente && yaInicio)
+      ? { label: 'Pendiente de resultado', color: '#EF4444', bg: 'rgba(239,68,68,0.12)' }
+      : {
+        en_vivo: { label: 'Pendiente de resultado', color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
+        finalizado: { label: 'Final', color: '#6B7280', bg: 'rgba(107,114,128,0.12)' },
+        cancelado: { label: 'Cancelado', color: '#F87171', bg: 'rgba(248,113,113,0.12)' }
+      }[estado] ?? { label: estado, color: '#6B7280', bg: 'rgba(107,114,128,0.12)' }
 
   const handleSave = async () => {
     setError('')
@@ -177,6 +180,25 @@ export default function PrediccionCard ({
             <span className="text-sm font-black text-white">
               {resultadoFinal.golesA} — {resultadoFinal.golesB}
             </span>
+          </div>
+        )}
+
+        {/* Comparación en vivo: tu predicción vs marcador actual */}
+        {!finalizado && (enVivo || yaInicio) && resultadoFinal && (
+          <div
+            className="mt-3 flex items-center justify-center gap-4 rounded-xl py-2 px-3"
+            style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}
+          >
+            <div className="text-center">
+              <p className="text-[10px] uppercase tracking-widest" style={{ color: '#6B7280' }}>🔴 En vivo</p>
+              <p className="text-sm font-black text-white">{resultadoFinal.golesA} — {resultadoFinal.golesB}</p>
+            </div>
+            {predExistente && (
+              <div className="text-center">
+                <p className="text-[10px] uppercase tracking-widest" style={{ color: '#6B7280' }}>Tu predicción</p>
+                <p className="text-sm font-black" style={{ color: '#4ADE80' }}>{predExistente.golesA} — {predExistente.golesB}</p>
+              </div>
+            )}
           </div>
         )}
       </div>
