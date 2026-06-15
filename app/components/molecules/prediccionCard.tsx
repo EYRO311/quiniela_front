@@ -41,6 +41,10 @@ export default function PrediccionCard ({
   const finalizado = estado === 'finalizado'
   const enVivo = estado === 'en_vivo'
 
+  // TEMPORAL: candado de cierre desactivado a petición del usuario (volver a activar después)
+  // const puedeEditar = pendiente
+  const puedeEditar = true
+
   const estadoBadge = {
     pendiente: { label: 'Pendiente', color: '#60A5FA', bg: 'rgba(96,165,250,0.12)' },
     en_vivo: { label: 'EN VIVO', color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
@@ -112,7 +116,7 @@ export default function PrediccionCard ({
 
           {/* Score inputs */}
           <div className="flex items-center gap-2 px-2">
-            {pendiente ? (
+            {puedeEditar ? (
               <>
                 <ScoreInput
                   value={golesA}
@@ -177,7 +181,7 @@ export default function PrediccionCard ({
       </div>
 
       {/* Save button (solo si pendiente) */}
-      {pendiente && (
+      {puedeEditar && (
         <div className="px-4 pb-4 space-y-2">
           {error && (
             <p className="text-xs text-center" style={{ color: '#F87171' }}>{error}</p>
