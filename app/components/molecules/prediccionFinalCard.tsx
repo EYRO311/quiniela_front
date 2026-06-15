@@ -29,9 +29,11 @@ export default function PrediccionFinalCard ({
   const [subcampeon, setSubcampeon] = useState(prediccionExistente?.id_equipo_subcampeon ?? '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [guardada, setGuardada] = useState(!!prediccionExistente)
   const [error, setError] = useState('')
 
   const fmtFechaLimite = new Date(fechaLimite).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })
+  const nombreEquipo = (id: string) => equipos.find(e => e.id_equipo === id)?.nombre_pais ?? ''
 
   const handleSave = async () => {
     setError('')
@@ -43,7 +45,8 @@ export default function PrediccionFinalCard ({
     try {
       await savePrediccionFinal({ idQuiniela, idUsuario, idCampeon: campeon, idSubcampeon: subcampeon })
       setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      setGuardada(true)
+      setTimeout(() => setSaved(false), 4000)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al guardar')
     } finally {
@@ -106,23 +109,39 @@ export default function PrediccionFinalCard ({
       {!cerrado && (
         <>
           {error && <p className="text-xs text-center" style={{ color: '#F87171' }}>{error}</p>}
+
+          {saved && (
+            <div
+              className="rounded-xl px-3 py-2 text-center text-sm font-bold"
+              style={{ color: '#4ADE80', background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)' }}
+            >
+              ✓ Predicción guardada correctamente
+            </div>
+          )}
+
           <button
             onClick={handleSave}
             disabled={saving}
             className="w-full py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-[1.01]"
             style={{
-              background: saved
-                ? 'rgba(74,222,128,0.15)'
-                : saving
+              background: saving
                 ? '#374151'
                 : 'linear-gradient(135deg, #D4AF37, #B8860B)',
-              color: saved ? '#4ADE80' : 'white',
+              color: 'white',
               cursor: saving ? 'not-allowed' : 'pointer',
-              border: saved ? '1px solid rgba(74,222,128,0.3)' : 'none'
+              border: 'none'
             }}
           >
-            {saved ? '✓ Guardado' : saving ? 'Guardando...' : 'Guardar predicción final'}
+            {saving ? 'Guardando...' : guardada ? 'Actualizar predicción final' : 'Guardar predicción final'}
           </button>
+
+          {guardada && (
+            <p className="text-xs text-center" style={{ color: '#9CA3AF' }}>
+              ⚠️ Tu predicción actual es <strong style={{ color: 'white' }}>{nombreEquipo(campeon)}</strong> campeón y{' '}
+              <strong style={{ color: 'white' }}>{nombreEquipo(subcampeon)}</strong> subcampeón. Puedes modificarla hasta el {fmtFechaLimite},
+              pero una vez transcurrida esa fecha <strong>no se podrá cambiar el resultado</strong>.
+            </p>
+          )}
         </>
       )}
     </div>
