@@ -220,10 +220,13 @@ function ScoreInput ({
   return (
     <input
       type="number"
+      inputMode="numeric"
+      pattern="[0-9]*"
       min={0}
       max={20}
       value={value}
       onChange={e => onChange(Math.max(0, Math.min(20, Number(e.target.value))))}
+      onFocus={e => e.target.select()}
       disabled={disabled}
       className="w-12 h-12 text-center text-xl font-black rounded-xl focus:outline-none"
       style={{
