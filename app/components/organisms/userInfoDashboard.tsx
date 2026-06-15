@@ -11,6 +11,9 @@ import JoinQuinielaModal from '@/app/components/organisms/joinQuinielaModal'
 import ParticipantesModal from '@/app/components/organisms/participantesModal'
 import WorldCupCountdown from '@/app/components/molecules/WorldCupCountdown'
 import F1NextRaceCountdown from '@/app/components/molecules/F1NextRaceCountdown'
+import PrediccionCard from '@/app/components/molecules/prediccionCard'
+import { getPartidos } from '@/services/partidos.service'
+import { getPronosticos } from '@/services/pronosticos.service'
 import { getTheme } from '@/lib/theme'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
@@ -79,6 +82,29 @@ interface CarreraF1 {
   estado: string
 }
 
+interface Partido {
+  id_partido: string
+  equipo_a: string
+  equipo_b: string
+  escudo_a: string | null
+  escudo_b: string | null
+  goles_a: number | null
+  goles_b: number | null
+  fecha: string
+  grupo: string | null
+  jornada: number | null
+  estado: string
+  estadio: string | null
+  ciudad: string | null
+}
+
+interface Pronostico {
+  id_pronostico: string
+  id_partido: string
+  goles_a_pred: number
+  goles_b_pred: number
+}
+
 export default function UserInfoDashboard ({ idUsuario }: Props) {
   const [usuario, setUsuario] = useState<Usuario | null>(null)
   const [quinielas, setQuinielas] = useState<QuinielaUsuario[]>([])
@@ -90,6 +116,8 @@ export default function UserInfoDashboard ({ idUsuario }: Props) {
   const [showCreate, setShowCreate] = useState(false)
   const [showJoin, setShowJoin] = useState(false)
   const [selectedQuiniela, setSelectedQuiniela] = useState<SelectedQuiniela | null>(null)
+  const [partidosEnVivo, setPartidosEnVivo] = useState<Partido[]>([])
+  const [pronosticosEnVivo, setPronosticosEnVivo] = useState<Record<string, Pronostico>>({})
 
   useEffect(() => {
     Promise.allSettled([
@@ -109,6 +137,29 @@ export default function UserInfoDashboard ({ idUsuario }: Props) {
       if (rF.status === 'fulfilled') setProximaCarrera((rF.value as { carrera: CarreraF1 }).carrera ?? null)
     }).catch(console.error).finally(() => setLoading(false))
   }, [idUsuario, refreshKey])
+
+  // Cargar partidos en vivo (o ya iniciados) + predicciones del usuario para comparación
+  useEffect(() => {
+    const quinielaAbierta = quinielas.find(q => q.quinielas?.estado === 'abierta')?.quinielas
+    if (!quinielaAbierta) return
+
+    Promise.all([
+      getPartidos(),
+      getPronosticos(idUsuario, quinielaAbierta.id_quiniela)
+    ])
+      .then(([pRes, prRes]: [{ partidos: Partido[] }, { pronosticos: Pronostico[] }]) => {
+        const ahora = Date.now()
+        const enVivo = (pRes.partidos ?? []).filter(p =>
+          p.estado === 'en_vivo' || (p.estado === 'pendiente' && new Date(p.fecha).getTime() <= ahora)
+        )
+        setPartidosEnVivo(enVivo)
+
+        const map: Record<string, Pronostico> = {}
+        for (const pr of prRes.pronosticos ?? []) map[pr.id_partido] = pr
+        setPronosticosEnVivo(map)
+      })
+      .catch(() => {})
+  }, [idUsuario, quinielas, refreshKey])
 
   const handleRefresh = () => {
     setLoading(true)
@@ -189,6 +240,43 @@ export default function UserInfoDashboard ({ idUsuario }: Props) {
               </div>
             </div>
           </div>
+
+          {/* Partidos en vivo */}
+          {partidosEnVivo.length > 0 && (
+            <section className="space-y-3">
+              <SectionTitle color="#EF4444">🔴 En vivo ahora</SectionTitle>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {partidosEnVivo.map(p => (
+                  <PrediccionCard
+                    key={p.id_partido}
+                    idQuiniela=""
+                    idUsuario={idUsuario}
+                    idPartido={p.id_partido}
+                    equipoA={p.equipo_a}
+                    equipoB={p.equipo_b}
+                    escudoA={p.escudo_a}
+                    escudoB={p.escudo_b}
+                    fecha={p.fecha}
+                    estadio={p.estadio}
+                    ciudad={p.ciudad}
+                    estado={p.estado}
+                    grupo={p.grupo}
+                    jornada={p.jornada}
+                    predExistente={
+                      pronosticosEnVivo[p.id_partido]
+                        ? { golesA: pronosticosEnVivo[p.id_partido].goles_a_pred, golesB: pronosticosEnVivo[p.id_partido].goles_b_pred }
+                        : null
+                    }
+                    resultadoFinal={
+                      p.goles_a !== null && p.goles_b !== null
+                        ? { golesA: p.goles_a, golesB: p.goles_b }
+                        : null
+                    }
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Acciones */}
           <div className="flex flex-wrap gap-3">
