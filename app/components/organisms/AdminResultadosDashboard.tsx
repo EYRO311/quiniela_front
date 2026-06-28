@@ -19,6 +19,8 @@ interface Partido {
   estado: string
   estadio: string | null
   ciudad: string | null
+  penal_a?: number | null
+  penal_b?: number | null
 }
 
 export default function AdminResultadosDashboard ({ idUsuario }: { idUsuario: string }) {
@@ -191,6 +193,8 @@ function ResultadoCard ({
 }) {
   const [golesA, setGolesA] = useState<number>(partido.goles_a ?? 0)
   const [golesB, setGolesB] = useState<number>(partido.goles_b ?? 0)
+  const [penalA, setPenalA] = useState<number>(partido.penal_a ?? 0)
+  const [penalB, setPenalB] = useState<number>(partido.penal_b ?? 0)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -198,12 +202,24 @@ function ResultadoCard ({
   const fmtDate = fecha.toLocaleDateString('es-MX', { weekday: 'short', day: '2-digit', month: 'short' })
   const fmtTime = fecha.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
   const noHaIniciado = fecha.getTime() > Date.now()
+  const esEliminacion = partido.fase !== 'grupos'
+  const requierePenales = esEliminacion && golesA === golesB
 
   const handleGuardar = async () => {
     setError('')
+    if (requierePenales && penalA === penalB) {
+      setError('La tanda de penales no puede terminar en empate')
+      return
+    }
     setSaving(true)
     try {
-      await setResultadoPartido(partido.id_partido, { golesA, golesB, idUsuario })
+      await setResultadoPartido(partido.id_partido, {
+        golesA,
+        golesB,
+        idUsuario,
+        penalA: requierePenales ? penalA : null,
+        penalB: requierePenales ? penalB : null
+      })
       onGuardado()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al guardar el resultado')
@@ -237,6 +253,19 @@ function ResultadoCard ({
 
         <span className="flex-1 text-sm font-semibold text-white text-center">{partido.equipo_b}</span>
       </div>
+
+      {requierePenales && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] text-center uppercase tracking-widest" style={{ color: '#D4AF37' }}>
+            Empate · Marcador en penales
+          </p>
+          <div className="flex items-center justify-center gap-2">
+            <ScoreInput value={penalA} onChange={setPenalA} color="#D4AF37" disabled={!!readOnly || saving || noHaIniciado} />
+            <span className="text-gray-600 font-black">—</span>
+            <ScoreInput value={penalB} onChange={setPenalB} color="#D4AF37" disabled={!!readOnly || saving || noHaIniciado} />
+          </div>
+        </div>
+      )}
 
       {!readOnly && (
         <>

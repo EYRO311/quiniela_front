@@ -32,6 +32,8 @@ interface Pronostico {
   id_partido: string
   goles_a_pred: number
   goles_b_pred: number
+  penal_a_pred: number | null
+  penal_b_pred: number | null
 }
 
 interface Quiniela {
@@ -353,11 +355,17 @@ export default function PrediccionesDashboard ({ idUsuario }: { idUsuario: strin
                   estadio={p.estadio}
                   ciudad={p.ciudad}
                   estado={p.estado}
+                  fase={p.fase}
                   grupo={p.grupo}
                   jornada={p.jornada}
                   predExistente={
                     pronosticos[p.id_partido]
-                      ? { golesA: pronosticos[p.id_partido].goles_a_pred, golesB: pronosticos[p.id_partido].goles_b_pred }
+                      ? {
+                        golesA: pronosticos[p.id_partido].goles_a_pred,
+                        golesB: pronosticos[p.id_partido].goles_b_pred,
+                        penalAPred: pronosticos[p.id_partido].penal_a_pred,
+                        penalBPred: pronosticos[p.id_partido].penal_b_pred
+                      }
                       : null
                   }
                   resultadoFinal={
@@ -416,11 +424,17 @@ export default function PrediccionesDashboard ({ idUsuario }: { idUsuario: strin
                             estadio={p.estadio}
                             ciudad={p.ciudad}
                             estado={p.estado}
+                            fase={p.fase}
                             grupo={p.grupo}
                             jornada={p.jornada}
                             predExistente={
                               pronosticos[p.id_partido]
-                                ? { golesA: pronosticos[p.id_partido].goles_a_pred, golesB: pronosticos[p.id_partido].goles_b_pred }
+                                ? {
+                                  golesA: pronosticos[p.id_partido].goles_a_pred,
+                                  golesB: pronosticos[p.id_partido].goles_b_pred,
+                                  penalAPred: pronosticos[p.id_partido].penal_a_pred,
+                                  penalBPred: pronosticos[p.id_partido].penal_b_pred
+                                }
                                 : null
                             }
                             resultadoFinal={
@@ -449,11 +463,17 @@ export default function PrediccionesDashboard ({ idUsuario }: { idUsuario: strin
                           estadio={p.estadio}
                           ciudad={p.ciudad}
                           estado={p.estado}
+                          fase={p.fase}
                           grupo={p.grupo}
                           jornada={p.jornada}
                           predExistente={
                             pronosticos[p.id_partido]
-                              ? { golesA: pronosticos[p.id_partido].goles_a_pred, golesB: pronosticos[p.id_partido].goles_b_pred }
+                              ? {
+                                golesA: pronosticos[p.id_partido].goles_a_pred,
+                                golesB: pronosticos[p.id_partido].goles_b_pred,
+                                penalAPred: pronosticos[p.id_partido].penal_a_pred,
+                                penalBPred: pronosticos[p.id_partido].penal_b_pred
+                              }
                               : null
                           }
                           resultadoFinal={

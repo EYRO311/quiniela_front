@@ -12,12 +12,18 @@ const IconRank  = () => <svg viewBox="0 0 24 24" fill="currentColor" className="
 const IconF1    = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M18.92 5.01C18.72 4.42 18.16 4 17.5 4h-11c-.66 0-1.21.42-1.42 1.01L3 11v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 6h10.29l1.08 3.11H5.77L6.85 6zM19 17H5v-6h14v6zm-9.5-1c.83 0 1.5-.67 1.5-1.5S10.33 13 9.5 13 8 13.67 8 14.5 8.67 16 9.5 16zm5 0c.83 0 1.5-.67 1.5-1.5S15.33 13 14.5 13 13 13.67 13 14.5s.67 1.5 1.5 1.5z" /></svg>
 const IconProno = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z" /></svg>
 const IconShield = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M12 2l8 3v6c0 5-3.5 9.5-8 11-4.5-1.5-8-6-8-11V5l8-3z" /></svg>
+const IconStats  = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z" /></svg>
+const IconGroup  = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" /></svg>
+const IconBracket = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M4 5h4v4H4zM4 15h4v4H4zM16 9h4v6h-4zM8 7h4M8 17h4M12 7v3a2 2 0 0 0 2 2M12 17v-3a2 2 0 0 1 2-2" /></svg>
 
 /* ── Definición de menús por preferencia ── */
 const NAV_FUTBOL = [
   { href: '/user',        label: 'Inicio',       icon: <IconHome />,  badge: null },
   { href: '/partidos',    label: 'Partidos',      icon: <IconBall />,  badge: '⚽' },
+  { href: '/llaves',      label: 'Llaves',        icon: <IconBracket />, badge: '⚽' },
   { href: '/predicciones',label: 'Predicciones',  icon: <IconPred />,  badge: '⚽' },
+  { href: '/mis-puntos',  label: 'Mis Puntos',    icon: <IconStats />, badge: '⚽' },
+  { href: '/comparativa', label: 'Comparativa',   icon: <IconGroup />, badge: '⚽' },
   { href: '/equipos',     label: 'Equipos',       icon: <IconShield />,badge: '⚽' },
   { href: '/rankings',    label: 'Rankings',      icon: <IconRank />,  badge: null }
 ]
@@ -32,7 +38,10 @@ const NAV_F1 = [
 const NAV_AMBOS = [
   { href: '/user',            label: 'Inicio',        icon: <IconHome />,  badge: null },
   { href: '/partidos',        label: 'Partidos',       icon: <IconBall />,  badge: '⚽' },
+  { href: '/llaves',          label: 'Llaves',         icon: <IconBracket />, badge: '⚽' },
   { href: '/predicciones',    label: 'Predicciones',   icon: <IconPred />,  badge: '⚽' },
+  { href: '/mis-puntos',      label: 'Mis Puntos',     icon: <IconStats />, badge: '⚽' },
+  { href: '/comparativa',     label: 'Comparativa',    icon: <IconGroup />, badge: '⚽' },
   { href: '/equipos',         label: 'Equipos',        icon: <IconShield />,badge: '⚽' },
   { href: '/rankings',        label: 'Rankings',       icon: <IconRank />,  badge: null },
   { href: '/f1',              label: 'F1',             icon: <IconF1 />,    badge: '🏎️' },

@@ -15,23 +15,29 @@ interface PrediccionCardProps {
   estadio?: string | null
   ciudad?: string | null
   estado: string
+  fase: string
   grupo?: string | null
   jornada?: number | null
-  predExistente?: { golesA: number; golesB: number } | null
+  predExistente?: { golesA: number; golesB: number; penalAPred?: number | null; penalBPred?: number | null } | null
   resultadoFinal?: { golesA: number; golesB: number } | null
 }
 
 export default function PrediccionCard ({
   idQuiniela, idUsuario, idPartido,
   equipoA, equipoB, escudoA, escudoB,
-  fecha, estadio, ciudad, estado, grupo, jornada,
+  fecha, estadio, ciudad, estado, fase, grupo, jornada,
   predExistente, resultadoFinal
 }: PrediccionCardProps) {
   const [golesA, setGolesA] = useState<number>(predExistente?.golesA ?? 0)
   const [golesB, setGolesB] = useState<number>(predExistente?.golesB ?? 0)
+  const [penalAPred, setPenalAPred] = useState<number>(predExistente?.penalAPred ?? 0)
+  const [penalBPred, setPenalBPred] = useState<number>(predExistente?.penalBPred ?? 0)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+
+  const esEliminacion = fase !== 'grupos'
+  const requierePenales = esEliminacion && golesA === golesB
 
   const fechaObj = new Date(fecha)
   const fmtDate = fechaObj.toLocaleDateString('es-MX', { weekday: 'short', day: '2-digit', month: 'short' })
@@ -58,9 +64,21 @@ export default function PrediccionCard ({
 
   const handleSave = async () => {
     setError('')
+    if (requierePenales && penalAPred === penalBPred) {
+      setError('La tanda de penales no puede terminar en empate')
+      return
+    }
     setSaving(true)
     try {
-      await savePronostico({ idQuiniela, idUsuario, idPartido, golesAPred: golesA, golesBPred: golesB })
+      await savePronostico({
+        idQuiniela,
+        idUsuario,
+        idPartido,
+        golesAPred: golesA,
+        golesBPred: golesB,
+        penalAPred: requierePenales ? penalAPred : null,
+        penalBPred: requierePenales ? penalBPred : null
+      })
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err: unknown) {
@@ -169,6 +187,27 @@ export default function PrediccionCard ({
             <p className="text-xs font-semibold text-white leading-tight">{equipoB}</p>
           </div>
         </div>
+
+        {/* Marcador de penales (empate en fase eliminatoria) */}
+        {puedeEditar && requierePenales && (
+          <div className="mt-3 space-y-1.5">
+            <p className="text-[10px] text-center uppercase tracking-widest" style={{ color: '#D4AF37' }}>
+              Empate · Marcador en penales
+            </p>
+            <div className="flex items-center justify-center gap-2">
+              <ScoreInput value={penalAPred} onChange={setPenalAPred} color="#D4AF37" disabled={saving} />
+              <span className="text-gray-600 font-black text-lg">—</span>
+              <ScoreInput value={penalBPred} onChange={setPenalBPred} color="#D4AF37" disabled={saving} />
+            </div>
+          </div>
+        )}
+
+        {!puedeEditar && predExistente?.golesA === predExistente?.golesB &&
+          predExistente?.penalAPred != null && predExistente?.penalBPred != null && (
+          <p className="mt-2 text-[11px] text-center" style={{ color: '#D4AF37' }}>
+            🥅 Penales: {predExistente.penalAPred} — {predExistente.penalBPred}
+          </p>
+        )}
 
         {/* Resultado final (si está finalizado) */}
         {finalizado && resultadoFinal && (

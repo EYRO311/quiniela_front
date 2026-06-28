@@ -35,6 +35,8 @@ export async function setResultadoPartido (idPartido: string, data: {
   golesA: number
   golesB: number
   idUsuario: string
+  penalA?: number | null
+  penalB?: number | null
 }) {
   const res = await fetch(`${API_URL}/partidos/${idPartido}/resultado`, {
     method: 'PUT',

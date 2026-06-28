@@ -91,6 +91,7 @@ interface Partido {
   goles_a: number | null
   goles_b: number | null
   fecha: string
+  fase: string
   grupo: string | null
   jornada: number | null
   estado: string
@@ -103,6 +104,8 @@ interface Pronostico {
   id_partido: string
   goles_a_pred: number
   goles_b_pred: number
+  penal_a_pred: number | null
+  penal_b_pred: number | null
 }
 
 export default function UserInfoDashboard ({ idUsuario }: Props) {
@@ -260,11 +263,17 @@ export default function UserInfoDashboard ({ idUsuario }: Props) {
                     estadio={p.estadio}
                     ciudad={p.ciudad}
                     estado={p.estado}
+                    fase={p.fase}
                     grupo={p.grupo}
                     jornada={p.jornada}
                     predExistente={
                       pronosticosEnVivo[p.id_partido]
-                        ? { golesA: pronosticosEnVivo[p.id_partido].goles_a_pred, golesB: pronosticosEnVivo[p.id_partido].goles_b_pred }
+                        ? {
+                          golesA: pronosticosEnVivo[p.id_partido].goles_a_pred,
+                          golesB: pronosticosEnVivo[p.id_partido].goles_b_pred,
+                          penalAPred: pronosticosEnVivo[p.id_partido].penal_a_pred,
+                          penalBPred: pronosticosEnVivo[p.id_partido].penal_b_pred
+                        }
                         : null
                     }
                     resultadoFinal={

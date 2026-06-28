@@ -10,12 +10,23 @@ export async function getPronosticos (idUsuario: string, idQuiniela: string) {
   return res.json()
 }
 
+export async function getPronosticosQuiniela (idQuiniela: string) {
+  const res = await fetch(`${API_URL}/pronosticos/quiniela/${idQuiniela}`)
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({ error: 'Error del servidor' }))
+    throw new Error(json.error || 'Error al obtener pronósticos de la quiniela')
+  }
+  return res.json()
+}
+
 export async function savePronostico (data: {
   idQuiniela: string
   idUsuario: string
   idPartido: string
   golesAPred: number
   golesBPred: number
+  penalAPred?: number | null
+  penalBPred?: number | null
 }) {
   const res = await fetch(`${API_URL}/pronosticos`, {
     method: 'POST',
