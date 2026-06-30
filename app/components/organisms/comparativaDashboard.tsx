@@ -17,7 +17,10 @@ interface Partido {
   goles_b: number | null
   fecha: string
   grupo: string | null
+  fase: string
   estado: string
+  penal_a: number | null
+  penal_b: number | null
 }
 
 interface PronosticoTodos {
@@ -26,6 +29,8 @@ interface PronosticoTodos {
   id_usuario: string
   goles_a_pred: number
   goles_b_pred: number
+  penal_a_pred: number | null
+  penal_b_pred: number | null
   puntos_obtenidos: number | null
 }
 
@@ -47,8 +52,8 @@ interface Participante {
 }
 
 function puntosColor (pts: number | null) {
-  if (pts === 3) return { color: '#D4AF37', bg: 'rgba(212,175,55,0.15)' }
-  if (pts === 1) return { color: '#4ADE80', bg: 'rgba(74,222,128,0.12)' }
+  if (pts != null && pts >= 3) return { color: '#D4AF37', bg: 'rgba(212,175,55,0.15)' }
+  if (pts != null && pts > 0) return { color: '#4ADE80', bg: 'rgba(74,222,128,0.12)' }
   return { color: '#6B7280', bg: 'rgba(107,114,128,0.08)' }
 }
 
@@ -107,6 +112,11 @@ function PartidoComparativaCard ({
         >
           <p className="text-[9px] uppercase tracking-widest" style={{ color: '#4ADE80' }}>Final</p>
           <p className="text-sm font-black text-white">{partido.goles_a} — {partido.goles_b}</p>
+          {partido.penal_a != null && (
+            <p className="text-[9px] font-bold" style={{ color: '#D4AF37' }}>
+              🥅 {partido.penal_a}-{partido.penal_b} pen
+            </p>
+          )}
         </div>
       </div>
 
@@ -126,9 +136,16 @@ function PartidoComparativaCard ({
 
               {pron ? (
                 <>
-                  <span className="text-sm font-bold" style={{ color: '#60A5FA' }}>
-                    {pron.goles_a_pred} — {pron.goles_b_pred}
-                  </span>
+                  <div className="text-right leading-tight">
+                    <span className="text-sm font-bold block" style={{ color: '#60A5FA' }}>
+                      {pron.goles_a_pred} — {pron.goles_b_pred}
+                    </span>
+                    {pron.penal_a_pred != null && (
+                      <span className="text-[10px]" style={{ color: '#9CA3AF' }}>
+                        🥅 {pron.penal_a_pred}-{pron.penal_b_pred}
+                      </span>
+                    )}
+                  </div>
                   <span
                     className="shrink-0 w-9 text-center rounded-lg px-2 py-0.5 text-xs font-black"
                     style={{ color: paleta.color, background: paleta.bg }}
