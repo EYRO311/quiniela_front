@@ -10,6 +10,15 @@ export async function getPrediccionFinal (idUsuario: string, idQuiniela: string)
   return res.json()
 }
 
+export async function getPrediccionesFinalesQuiniela (idQuiniela: string) {
+  const res = await fetch(`${API_URL}/predicciones-finales/quiniela/${idQuiniela}`)
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({ error: 'Error del servidor' }))
+    throw new Error(json.error || 'Error al obtener las predicciones finales')
+  }
+  return res.json()
+}
+
 export async function savePrediccionFinal (data: {
   idQuiniela: string
   idUsuario: string

@@ -6,6 +6,7 @@ import { getUsuarioInfo } from '@/services/usuario.service'
 import { getPartidos } from '@/services/partidos.service'
 import { getPronosticosQuiniela } from '@/services/pronosticos.service'
 import { getParticipantes } from '@/services/quiniela.service'
+import { getPrediccionesFinalesQuiniela } from '@/services/prediccionFinal.service'
 
 interface Partido {
   id_partido: string
@@ -49,6 +50,20 @@ interface Participante {
   id_quiniela_usuario: string
   puntos: number
   usuarios: { id_random: string; username: string; nombre: string | null } | null
+}
+
+interface EquipoResumen {
+  id_equipo: string
+  nombre_pais: string
+  escudo_url: string | null
+}
+
+interface PrediccionFinalUsuario {
+  id_usuario: string
+  username: string
+  campeon: EquipoResumen | null
+  subcampeon: EquipoResumen | null
+  puntos_obtenidos: number
 }
 
 function puntosColor (pts: number | null) {
@@ -164,12 +179,67 @@ function PartidoComparativaCard ({
   )
 }
 
+function PrediccionesFinalesCard ({ predicciones }: { predicciones: PrediccionFinalUsuario[] }) {
+  if (predicciones.length === 0) return null
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{ background: '#0D1B2A', border: '1px solid rgba(212,175,55,0.25)' }}
+    >
+      <div
+        className="px-4 py-3"
+        style={{ background: 'rgba(212,175,55,0.08)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+      >
+        <p className="text-sm font-black text-white">🏆 Campeón y Subcampeón</p>
+        <p className="text-[11px]" style={{ color: '#9CA3AF' }}>Lo que cada jugador predijo para la final</p>
+      </div>
+
+      <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+        {predicciones.map(p => (
+          <div key={p.id_usuario} className="px-4 py-2.5 flex items-center gap-3">
+            <span className="flex-1 text-sm font-semibold truncate" style={{ color: '#D1D5DB' }}>
+              {p.username}
+            </span>
+
+            <div className="flex items-center gap-1.5">
+              <TeamShield url={p.campeon?.escudo_url} name={p.campeon?.nombre_pais ?? '?'} />
+              <span className="text-xs font-bold" style={{ color: '#D4AF37' }}>
+                {p.campeon?.nombre_pais ?? 'Sin elegir'}
+              </span>
+            </div>
+
+            <span className="text-[10px]" style={{ color: '#4B5563' }}>·</span>
+
+            <div className="flex items-center gap-1.5">
+              <TeamShield url={p.subcampeon?.escudo_url} name={p.subcampeon?.nombre_pais ?? '?'} />
+              <span className="text-xs font-bold" style={{ color: '#9CA3AF' }}>
+                {p.subcampeon?.nombre_pais ?? 'Sin elegir'}
+              </span>
+            </div>
+
+            {p.puntos_obtenidos > 0 && (
+              <span
+                className="shrink-0 rounded-lg px-2 py-0.5 text-xs font-black"
+                style={{ color: '#4ADE80', background: 'rgba(74,222,128,0.12)' }}
+              >
+                +{p.puntos_obtenidos}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function ComparativaDashboard ({ idUsuario }: { idUsuario: string }) {
   const [quinielas, setQuinielas] = useState<Quiniela[]>([])
   const [selectedQuiniela, setSelectedQuiniela] = useState<Quiniela | null>(null)
   const [partidos, setPartidos] = useState<Partido[]>([])
   const [participantes, setParticipantes] = useState<Participante[]>([])
   const [pronosticos, setPronosticos] = useState<PronosticoTodos[]>([])
+  const [prediccionesFinales, setPrediccionesFinales] = useState<PrediccionFinalUsuario[]>([])
   const [loadingQuinielas, setLoadingQuinielas] = useState(true)
   const [loadingDatos, setLoadingDatos] = useState(false)
 
@@ -193,16 +263,19 @@ export default function ComparativaDashboard ({ idUsuario }: { idUsuario: string
     Promise.all([
       getPartidos(),
       getParticipantes(selectedQuiniela.id_quiniela),
-      getPronosticosQuiniela(selectedQuiniela.id_quiniela)
+      getPronosticosQuiniela(selectedQuiniela.id_quiniela),
+      getPrediccionesFinalesQuiniela(selectedQuiniela.id_quiniela)
     ])
-      .then(([pRes, partRes, pronRes]: [
+      .then(([pRes, partRes, pronRes, predRes]: [
         { partidos: Partido[] },
         { participantes: Participante[] },
-        { pronosticos: PronosticoTodos[] }
+        { pronosticos: PronosticoTodos[] },
+        { predicciones: PrediccionFinalUsuario[] }
       ]) => {
         setPartidos(pRes.partidos ?? [])
         setParticipantes(partRes.participantes ?? [])
         setPronosticos(pronRes.pronosticos ?? [])
+        setPrediccionesFinales(predRes.predicciones ?? [])
         setLoadingDatos(false)
       })
       .catch(() => setLoadingDatos(false))
@@ -278,6 +351,11 @@ export default function ComparativaDashboard ({ idUsuario }: { idUsuario: string
               <p className="text-5xl animate-pulse mb-3">👥</p>
               <p className="text-sm tracking-widest uppercase" style={{ color: '#D4AF37' }}>Cargando...</p>
             </div>
+          )}
+
+          {/* Campeón y subcampeón de cada jugador */}
+          {!loadingDatos && selectedQuiniela && (
+            <PrediccionesFinalesCard predicciones={prediccionesFinales} />
           )}
 
           {/* Sin partidos finalizados */}
