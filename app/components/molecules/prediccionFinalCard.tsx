@@ -67,11 +67,11 @@ export default function PrediccionFinalCard ({
               className="rounded-full px-2 py-0.5 text-[10px] font-bold"
               style={{ color: '#D4AF37', background: 'rgba(212,175,55,0.12)' }}
             >
-              +5 pts
+              hasta 8 pts
             </span>
           </h2>
           <p className="text-xs mt-1" style={{ color: '#6B7280' }}>
-            ¿Qué equipos llegan a la final y quién es el campeón del mundo?
+            Campeón exacto +5, subcampeón exacto +3. Si le atinas a un equipo pero en la posición contraria, +3 igual.
             {cerrado
               ? ' Las predicciones están cerradas.'
               : ` Puedes cambiarla hasta el ${fmtFechaLimite}.`}
